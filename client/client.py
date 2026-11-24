@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Консольний клієнт для JSON API каталогу настільних ігор."""
 import argparse
+import getpass
 import os
+import re
 import sys
 
 import requests
@@ -60,6 +62,49 @@ def cmd_categories(args):
         print(f"{c['id']:<4}{c['name']:<18}{c['description'] or ''}")
 
 
+def admin_login():
+    """Вхід через форму Symfony з CSRF-токеном. Повертає сесію з cookie."""
+    email = os.environ.get("ADMIN_EMAIL") or input("Email адміна: ")
+    password = os.environ.get("ADMIN_PASSWORD") or getpass.getpass("Пароль: ")
+
+    s = requests.Session()
+    try:
+        page = s.get(f"{BASE_URL}/login", timeout=10)
+    except requests.exceptions.ConnectionError:
+        sys.exit(f"Не вдалося підключитися до {BASE_URL}. Запущено symfony serve?")
+
+    m = re.search(r'name="_csrf_token"[^>]*?value="([^"]+)"', page.text)
+    if not m:
+        sys.exit("Не знайдено CSRF-токен на /login")
+
+    # Браузер сам додає ці заголовки, а Symfony перевіряє їх для CSRF
+    headers = {
+        "Origin": BASE_URL,
+        "Referer": f"{BASE_URL}/login",
+    }
+    resp = s.post(f"{BASE_URL}/login", data={
+        "_username": email,
+        "_password": password,
+        "_csrf_token": m.group(1),
+    }, headers=headers, timeout=10)
+
+    if resp.url.rstrip("/").endswith("/login"):
+        if "CSRF" in resp.text:
+            sys.exit("Сервер відхилив CSRF-токен.")
+        sys.exit("Невірний логін або пароль.")
+    return s
+
+
+def cmd_admin_check(args):
+    s = admin_login()
+    resp = s.get(f"{BASE_URL}/admin", timeout=10)
+    print(f"GET /admin -> {resp.status_code}")
+    print("Підсумковий URL:", resp.url)
+    if "/login" in resp.url:
+        sys.exit("Адмінка не пустила: сесія не авторизована.")
+    print("Вхід в адмінку успішний.")
+
+
 def main():
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
@@ -80,6 +125,9 @@ def main():
 
     p = sub.add_parser("categories", help="список категорій")
     p.set_defaults(func=cmd_categories)
+
+    p = sub.add_parser("admin-check", help="увійти в адмінку через сесію")
+    p.set_defaults(func=cmd_admin_check)
 
     args = parser.parse_args()
     args.func(args)
