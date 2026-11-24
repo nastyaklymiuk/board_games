@@ -2,6 +2,20 @@
 
 {% block body %}
     <h1>Каталог настільних ігор</h1>
+    
+        <form method="get">
+        <input name="q" placeholder="Назва" value="{{ filters.q }}">
+        <select name="category">
+            <option value="">Усі категорії</option>
+            {% for c in categories %}
+                <option value="{{ c.id }}" {{ filters.category == c.id ? 'selected' }}>{{ c.name }}</option>
+            {% endfor %}
+        </select>
+        <input name="maxPrice" type="number" placeholder="Макс. ціна" value="{{ filters.maxPrice }}">
+        <input name="players" type="number" placeholder="Гравців" value="{{ filters.players }}">
+        <button>Знайти</button>
+    </form>
+
     <p>
         {% for c in categories %}
             <a href="{{ path('app_category_show', {id: c.id}) }}">{{ c.name }}</a>{% if not loop.last %} · {% endif %}
