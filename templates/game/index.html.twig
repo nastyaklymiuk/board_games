@@ -1,0 +1,11 @@
+{% extends 'base.html.twig' %}
+
+{% block body %}
+    <h1>Каталог настільних ігор</h1>
+    <p>
+        {% for c in categories %}
+            <a href="{{ path('app_category_show', {id: c.id}) }}">{{ c.name }}</a>{% if not loop.last %} · {% endif %}
+        {% endfor %}
+    </p>
+    {% include 'game/_table.html.twig' %}
+{% endblock %}

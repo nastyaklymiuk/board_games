@@ -1,0 +1,17 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ game.title }}{% endblock %}
+
+{% block body %}
+    <h1>{{ game.title }}</h1>
+    <p>Категорія: <a href="{{ path('app_category_show', {id: game.category.id}) }}">{{ game.category.name }}</a></p>
+    <p>{{ game.description }}</p>
+    <ul>
+        <li>Ціна: {{ game.price }} грн</li>
+        <li>Гравців: {{ game.minPlayers }}–{{ game.maxPlayers }}</li>
+        <li>Тривалість партії: {{ game.playTimeMinutes }} хв</li>
+        <li>Вік: {{ game.minAge }}+</li>
+        <li>Наявність: {{ game.inStock ? 'є в наявності' : 'немає' }}</li>
+    </ul>
+    <p><a href="{{ path('app_home') }}">← до каталогу</a></p>
+{% endblock %}
